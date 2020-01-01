@@ -7,8 +7,27 @@ binaries: csudoku gsudoku jsudoku psudoku
 # all reports
 reports: c-sol.txt g-sol.txt j-sol.txt p-sol.txt
 
+# maven project
+project :
+	@echo "building project"
+	@cd sudoku.project && make
+
 # everything 
 all: binaries reports
+
+# Docker image
+
+# variables
+log := last-build.txt
+serial := $(shell ./serial.sh)
+
+# targets
+docker : $(log)
+$(log) : Dockerfile project
+	@echo "building image"
+	@echo $(serial) | tee $(log)
+	@docker build --no-cache -t knightofnight/sudoku:$(serial) . 2>&1 | tee -a $(log)
+	@docker tag knightofnight/sudoku:$(serial) knightofnight/sudoku:latest 2>&1 | tee -a $(log)
 
 # single binary
 csudoku: sudoku.c
@@ -59,7 +78,12 @@ p-sol.txt: psudoku
 	@./psudoku > p-sol.txt
 
 # clean everything
-clean: cleanbinaries cleanreports
+clean: cleanbinaries cleanreports cleanproject
+
+# clean project
+cleanproject:
+	@echo "cleaning project"
+	@cd sudoku.project && make clean
 
 # clean binaries
 cleanbinaries:
