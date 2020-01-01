@@ -82,53 +82,20 @@ public class sudoku {
         return count;
     }
 
-    private static int[] rand_square(int grid[][], boolean empty) {
-        int found[][] = new int[0][0];
-
-        for (int r = 0; r < SIZE; r++) {
-            for (int c = 0; c < SIZE; c++) {
-                int square = grid[r][c];
-                if (((square == UNASSIGNED) && empty) || ((square != UNASSIGNED) && ! empty)) {
-                    int len = found.length;
-                    int newfound[][];
-                    newfound = new int[len + 1][2];
-
-                    for (int i = 0; i < len; i++) {
-                        newfound[i][0] = found[i][0];
-                        newfound[i][1] = found[i][1];
-                    }
-
-                    newfound[len][0] = r;
-                    newfound[len][1] = c;
-
-                    len++;
-
-                    found = newfound;
-                }
-            }
-        }
-
-        if (found.length > 0) {
-            return(found[randintmod(found.length)]);
-        } else {
-            int rc[] = { -1, -1 };
-            return(rc);
-        }
-    }
-
-    private static int longest = 0;
-
-    private static boolean solve(int grid[][], int level) {
+    private static int LONGEST = 0;
+    private static boolean solve(int grid[][], int level, boolean verbose) {
         int rc[] = first_empty_square(grid);
         if (rc[0] == -1) {
-            System.out.printf("solve puzz : %s\n", grid_to_str(grid));
+            if (verbose) {
+                System.out.printf("solve puzz : %s\n", grid_to_str(grid));
+            }
             return(true);
         }
         int row = rc[0];
         int col = rc[1];
 
         if (level == 0) {
-            longest = 0;
+            LONGEST = 0;
         }
 
         for (int num = 1; num <= SIZE; num++ ) {
@@ -136,16 +103,17 @@ public class sudoku {
                 continue;
             }
 
-            int len = TOTAL_SIZE - count_empty_squares(grid);
-
-            if (len > longest) {
-                longest = len;
-                System.out.printf("solve puzz : %s\n", grid_to_str(grid));
+            if (verbose) {
+                int len = TOTAL_SIZE - count_empty_squares(grid);
+                if (len > LONGEST) {
+                    LONGEST = len;
+                    System.out.printf("solve puzz : %s\n", grid_to_str(grid));
+                }
             }
 
             grid[row][col] = num;
 
-            if (solve(grid, level + 1)) {
+            if (solve(grid, level + 1, verbose)) {
                 return(true);
             }
 
@@ -158,6 +126,8 @@ public class sudoku {
     private static int uniqsolve(int grid[][], int start_row, int start_col) {
         int row;
         int col;
+        int workgrid[][] = new int[SIZE][SIZE];
+        int solutions = 0;
 
         if (start_row == -1 && start_col == -1) {
             int rc[] = first_empty_square(grid);
@@ -170,9 +140,6 @@ public class sudoku {
             row = start_row;
             col = start_col;
         }
-
-        int solutions = 0;
-        int workgrid[][] = new int[SIZE][SIZE];
 
         for (int num = 1; num <= SIZE; num++ ) {
             if (! num_available(grid, row, col, num)) {
@@ -193,6 +160,31 @@ public class sudoku {
         return(solutions);
     }
 
+    private static int rand_num(int tried[]) {
+        int len;
+        int pool[] = new int[0];
+        int newpool[];
+
+        for (int idx = 0; idx < SIZE; idx++) {
+            if (tried[idx] > 0) {
+                continue;
+            }
+            len = pool.length;
+            newpool = new int[len + 1];
+            for (int j = 0; j < len; j++) {
+                newpool[j] = pool[j];
+            }
+            newpool[len] = idx + 1;
+            pool = newpool;
+        }
+
+        if (pool.length > 0) {
+            return(pool[randintmod(pool.length)]);
+        } else {
+            return(0);
+        }
+    }
+
     private static boolean randsolve(int grid[][], int level) {
         int rc[] = first_empty_square(grid);
         if (rc[0] == -1) {
@@ -202,46 +194,26 @@ public class sudoku {
         int col = rc[1];
 
         int nums_tried[] = new int[SIZE];
+        int num;
+        int idx;
 
         while (true) {
-            int num = randintmod(SIZE) + 1;
+            num = rand_num(nums_tried);
 
-            int idx = num - 1;
-
-            if (nums_tried[idx] > 0) {
-//                System.out.printf("level:%d num:%d - CACHE HIT\n", level, num);
-                continue;
+            if (num == 0) {
+                break;
             }
 
-//            System.out.printf("level:%d num:%d - TRYING\n", level, num);
+            idx = num - 1;
 
             nums_tried[idx] = num;
 
             if (num_available(grid, row, col, num)) {
                 grid[row][col] = num;
                 if (randsolve(grid, level + 1)) {
-//                    System.out.printf("level:%d num:%d - SOLVED\n", level, num);
                     return(true);
                 }
                 grid[row][col] = UNASSIGNED;
-//                System.out.printf("level:%d num:%d - NO SOLUTION\n", level, num);
-//            } else {
-//                System.out.printf("level:%d num:%d - NOT AVAILABLE\n", level, num);
-            }
-
-            int available = 0;
-            for (int i = 0; i < SIZE; i++) {
-                if (nums_tried[i] == 0) {
-                    available++;
-                    break;
-                }
-            }
-
-            if (available == 0) {
-//                System.out.printf("level:%d NO SOLUTION\n", level);
-                break;
-//            } else {
-//                System.out.printf("level:%d TRYING MORE\n", level);
             }
         }
 
@@ -363,7 +335,7 @@ public class sudoku {
             System.exit(1);
         } else if (solutions == 1) {
             start = nanotime();
-            boolean solved = solve(grid, 0);
+            boolean solved = solve(grid, 0, false);
             if (! quiet) {
                 end = nanotime();
                 fastdiff = end - start;
@@ -388,6 +360,43 @@ public class sudoku {
         return(solutions);
     }
 
+    private static int[] rand_square(int grid[][], int tried[][], boolean empty) {
+        int found[][] = new int[0][0];
+
+        for (int r = 0; r < SIZE; r++) {
+            for (int c = 0; c < SIZE; c++) {
+                if (tried[r][c] > 0) {
+                    continue;
+                }
+
+                if (((grid[r][c] == UNASSIGNED) && ! empty) || ((grid[r][c] != UNASSIGNED) && empty)) {
+                    continue;
+                }
+
+                int len = found.length;
+                int newfound[][];
+                newfound = new int[len + 1][2];
+
+                for (int i = 0; i < len; i++) {
+                    newfound[i][0] = found[i][0];
+                    newfound[i][1] = found[i][1];
+                }
+
+                newfound[len][0] = r;
+                newfound[len][1] = c;
+
+                found = newfound;
+            }
+        }
+
+        if (found.length > 0) {
+            return(found[randintmod(found.length)]);
+        } else {
+            int rc[] = { -1, -1 };
+            return(rc);
+        }
+    }
+
     private static int[][] generate() {
         int tried[][] = new int[SIZE][SIZE];
         int grid[][] = new int[SIZE][SIZE];
@@ -395,6 +404,7 @@ public class sudoku {
         double start;
         double end;
         double diff;
+        int solutions = 0;
 
         start = nanotime();
         randsolve(grid, 0);
@@ -402,7 +412,7 @@ public class sudoku {
         diff = end - start;
 
         System.out.printf("generate solu : %s\n", grid_to_str(grid));
-        System.out.printf("generate time : %.6f\n", diff);
+        System.out.printf("generate time : %.6f (stage 1)\n", diff);
 
         int count_empty = 0;
         int max_empty = 61;
@@ -410,41 +420,30 @@ public class sudoku {
         start = nanotime();
 
         while (true) {
-            int r = randintmod(SIZE);
-            int c = randintmod(SIZE);
-
-            if (tried[r][c] > 0) {
-//                System.out.printf("%d,%d already checked\n", r, c);
-                continue;
+            int rc[] = rand_square(grid, tried, false);
+            if (rc[0] == -1) {
+                break;
             }
+
+            int r = rc[0];
+            int c = rc[1];
 
             tried[r][c] = 1;
-
-            if (grid[r][c] == UNASSIGNED) {
-//                System.out.printf("%d,%d unassigned\n", r, c);
-                continue;
-            }
 
             gridcopy(workgrid, grid);
             workgrid[r][c] = UNASSIGNED;
 
-            int solutions = uniqsolve(workgrid, r, c);
+            solutions = uniqsolve(workgrid, r, c);
 
             if (solutions == 1) {
                 grid[r][c] = UNASSIGNED;
                 count_empty++;
-//                System.out.printf("prune puzz : %s\n", grid_to_str(grid));
-//                System.out.printf("%d,%d is now empty\n", r, c);
+            } else if (solutions == 0) {
+                System.out.printf("%d,%d ERROR - no solution found\n", r, c);
+                System.exit(1);
             }
 
             if (count_empty == max_empty) {
-//                System.out.printf("%d,%d hit max empty\n", r, c);
-                break;
-            }
-
-            int rc[] = first_empty_square(tried);
-            if (rc[0] == -1) {
-//                System.out.printf("%d,%d all squares checked\n", r, c);
                 break;
             }
         }
@@ -452,11 +451,9 @@ public class sudoku {
         end = nanotime();
         diff = end - start;
 
-        System.out.printf("prune time : %.6f\n", diff);
-
         System.out.printf("generate puzz : %s\n", grid_to_str(grid));
-
-        System.out.printf("generate empt : %d (%d)\n", count_empty, max_empty);
+        System.out.printf("generate coun : %d (%d)\n", count_empty, max_empty);
+        System.out.printf("generate time : %.6f (stage 2)\n", diff);
 
         return(grid);
     }
@@ -503,9 +500,9 @@ public class sudoku {
             }
             double end = nanotime();
             double diff = end - start;
-            System.out.printf("total time : %.6f\n", diff);
-            System.out.printf("total rate : %.6f puzz/s\n", generate_count / diff);
             System.out.printf("total puzz : %d\n", generate_count);
+            System.out.printf("total rate : %.6f puzz/s\n", generate_count / diff);
+            System.out.printf("total time : %.6f\n", diff);
 
            return;
         }
@@ -525,7 +522,7 @@ public class sudoku {
             gridcopy(grid, EMPTY_GRID);
             String line = grid_strs[i];
             str_to_grid(grid, line);
-            timed_solve(grid, true, quiet);
+            timed_solve(grid, false, quiet);
         }
 
         double end = nanotime();
