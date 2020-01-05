@@ -1,18 +1,18 @@
-1.577737363
-Sending build context to Docker daemon  2.458MB
+1.578187175
+Sending build context to Docker daemon  20.59MB
 Step 1/5 : FROM knightofnight/aws-java
- ---> 7f808c6bf439
+ ---> 6973ef6d806b
 Step 2/5 : WORKDIR /
- ---> Running in 6dd92aa9ddb6
-Removing intermediate container 6dd92aa9ddb6
- ---> 76b71f41a5c8
+ ---> Running in 2d6e7542b89a
+Removing intermediate container 2d6e7542b89a
+ ---> 360cb603e74e
 Step 3/5 : COPY sudoku.class .
- ---> d8ab8bb23c98
+ ---> db1e5673a2f7
 Step 4/5 : COPY jsudoku .
- ---> e9f14feace3d
+ ---> 52755fc6d2d8
 Step 5/5 : ENTRYPOINT ["/jsudoku", "--generate", "10"]
- ---> Running in ac47b7dfdf32
-Removing intermediate container ac47b7dfdf32
- ---> 828603f4c647
-Successfully built 828603f4c647
-Successfully tagged knightofnight/sudoku:1.577737363
+ ---> Running in cf7acd00a0ce
+Removing intermediate container cf7acd00a0ce
+ ---> 5914b6c1ef66
+Successfully built 5914b6c1ef66
+Successfully tagged knightofnight/sudoku:1.578187175
