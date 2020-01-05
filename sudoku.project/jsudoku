@@ -1,0 +1,4 @@
+#!/bin/bash
+
+classpath=$CLASSPATH:run/*
+exec java -cp $classpath com.sudoku.Sudoku $@
