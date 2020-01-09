@@ -42,7 +42,7 @@ lib/sudoku.class: src/sudoku.java
 	@javac -d lib src/sudoku.java
 
 # alias to sudoku python files
-bin/psudoku: lib/sudoku.pyc lib/gridutils.pyc lib/config.pyc
+bin/psudoku: lib/sudoku.pyc lib/gridutils.pyc lib/config.pyc lib/draw.pyc lib/util.pyc
 
 # single binary
 lib/%.pyc : src/python/%.py
