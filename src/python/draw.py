@@ -47,6 +47,16 @@ _CELL_WIDTH = 4
 
 
 _SIDE_BOX_WIDTH = 30
+_SIDE_BOX_HEIGHT = 10
+_SIDE_BOX_START_COL = 38
+
+
+_INFO_COL = _SIDE_BOX_START_COL + 2
+_INFO_DATA_COL = _SIDE_BOX_START_COL + 7
+_INFO_LEN_MAX = _SIDE_BOX_WIDTH - 8
+
+
+_MSG_LEN_MAX = _SIDE_BOX_WIDTH - 3
 
 
 def setup_screen(scr):
@@ -104,9 +114,10 @@ def draw_screen():
 
     # side box
     start_row = 0
-    start_col = 38
+    start_col = _SIDE_BOX_START_COL
     width = _SIDE_BOX_WIDTH
-    height = 10
+    height = _SIDE_BOX_HEIGHT
+
     _WIN.hline(start_row, start_col, curses.ACS_HLINE, width)
     _WIN.hline(start_row + height, start_col, curses.ACS_HLINE, width)
     _WIN.vline(start_row, start_col, curses.ACS_VLINE, height)
@@ -117,13 +128,13 @@ def draw_screen():
     _WIN.addch(start_row + height, start_col, curses.ACS_LLCORNER)
     _WIN.addch(start_row + height, start_col + width, curses.ACS_LRCORNER)
 
-    attrs = curses.A_BOLD | curses.color_pair(COLOR_NORM)
-    _WIN.addstr(1, 40, "Loc:", attrs)
-    _WIN.addstr(2, 40, "Num:", attrs)
-    _WIN.addstr(3, 40, "Aut:", attrs)
-    _WIN.addstr(4, 40, "Slo:", attrs)
-    _WIN.addstr(5, 40, "Rat:", attrs)
-    _WIN.addstr(6, 40, "Tim:", attrs)
+    attrs = curses.color_pair(COLOR_INVERSE)
+    _WIN.addstr(1, _INFO_COL, "Loc:", attrs)
+    _WIN.addstr(2, _INFO_COL, "Num:", attrs)
+    _WIN.addstr(3, _INFO_COL, "Aut:", attrs)
+    _WIN.addstr(4, _INFO_COL, "Slo:", attrs)
+    _WIN.addstr(5, _INFO_COL, "Rat:", attrs)
+    _WIN.addstr(6, _INFO_COL, "Tim:", attrs)
 
 
 def draw_content(grid, row, col, highlight=None, color=COLOR_NORM, num=None, solved=False, message=None, message_color=None):
@@ -271,38 +282,38 @@ def draw_content(grid, row, col, highlight=None, color=COLOR_NORM, num=None, sol
 
 
 def draw_info(row, col, num):
-    attrs = curses.A_BOLD | curses.color_pair(COLOR_INVERSE)
-    attrs = curses.color_pair(COLOR_INVERSE)
+    attrs = curses.A_BOLD | curses.color_pair(COLOR_NORM)
+#    attrs = curses.color_pair(COLOR_INVERSE)
 
     if row is not None and col is not None:
         s = "%d,%d" % (row + 1, col + 1)
     else:
         s = "None"
-    _WIN.addstr(1, 45, fmt_info(s), attrs)
+    _WIN.addstr(1, _INFO_DATA_COL, fmt_info(s), attrs)
 
     if num is not None:
         s = str(num)
     else:
         s = "None"
-    _WIN.addstr(2, 45, fmt_info(s), attrs)
+    _WIN.addstr(2, _INFO_DATA_COL, fmt_info(s), attrs)
 
     s = "%s" % _AUTO
-    _WIN.addstr(3, 45, fmt_info(s), attrs)
+    _WIN.addstr(3, _INFO_DATA_COL, fmt_info(s), attrs)
 
     if _AUTO:
         s = "%s" % _SLOW
     else:
         s = "N/A"
-    _WIN.addstr(4, 45, fmt_info(s), attrs)
+    _WIN.addstr(4, _INFO_DATA_COL, fmt_info(s), attrs)
 
     if _AUTO and _SLOW:
         s = "%d (%.2f)" % (_RATE, _RATE / _RATE_FACTOR)
     else:
         s = "N/A"
-    _WIN.addstr(5, 45, fmt_info(s), attrs)
+    _WIN.addstr(5, _INFO_DATA_COL, fmt_info(s), attrs)
 
     s = "%.6f" % util.nanotime()
-    _WIN.addstr(6, 45, fmt_info(s), attrs)
+    _WIN.addstr(6, _INFO_DATA_COL, fmt_info(s), attrs)
 
 
 def draw_prompt(color=COLOR_NORM, message=None):
@@ -316,13 +327,16 @@ def draw_prompt(color=COLOR_NORM, message=None):
 
 def draw_message(message, color=COLOR_ERROR):
     attrs = curses.A_BOLD | curses.color_pair(color)
+#    attrs = curses.color_pair(COLOR_INVERSE)
     clear_message()
-    _WIN.addstr(8, 40, message, attrs)
+    _WIN.addstr(8, _INFO_COL, fmt_info(message, maxlen=_MSG_LEN_MAX), attrs)
 
 
 def clear_message(color=COLOR_NORM):
     attrs = curses.A_BOLD | curses.color_pair(color)
-    _WIN.addstr(8, 40, " " * (_SIDE_BOX_WIDTH - 2), attrs)
+#    attrs = curses.color_pair(COLOR_INVERSE)
+    s = ""
+    _WIN.addstr(8, _INFO_COL, fmt_info(s, maxlen=_MSG_LEN_MAX), attrs)
 
 
 def anykey():
@@ -331,6 +345,7 @@ def anykey():
     _WIN.nodelay(True)
 
 
-def fmt_info(content):
-    content += " " * ((_SIDE_BOX_WIDTH - 8) - len(content))
-    return content
+def fmt_info(content, maxlen=_INFO_LEN_MAX):
+    s = content[:maxlen]
+    s += " " * (maxlen - len(s))
+    return s
